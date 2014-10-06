@@ -1,4 +1,4 @@
-
+clear all;
 N = 100;
 
 function A = generateRandomLine()
@@ -6,12 +6,15 @@ function A = generateRandomLine()
 	points = (rand(2, 2) .- 0.5) .* 2;
 	p1 = points(1, :);
 	p2 = points(2, :);
+	if(abs(p1(1) - p2(1)) < 0.0001)
+		p1(1) = p1(1) /2;
+	endif
 	a = ( p2(2) - p1(2) ) / ( p2(1) - p1(1) );
 	b = p1(2) - a * p1(1);
 	A = [a; b];
 end
 
-function P = generatePoints(N)
+function P = generatePoints(N) % generate N random points uniformly from [-1 1] X [1- 1] 
 	P = (rand(N, 2) .- 0.5) .* 2;
 end
 
@@ -41,7 +44,7 @@ function i_pos = computeMissLabel(points, labels, weight)
 	[i_pos j] = find(misLabel != 0);
 end
 
-function [it, L, weight, out_error] = runExperiment(N, OUT_ERROR_N)
+function [it, points, labels, L, weight, out_error] = runExperiment(N, OUT_ERROR_N)
 	L = generateRandomLine();
 	points = generatePoints(N);
 	pointsEx = [ones(N, 1) points];
@@ -74,66 +77,49 @@ function [it, L, weight, out_error] = runExperiment(N, OUT_ERROR_N)
 	wLabels2 = getLabelsW(out_pointsEx, weight);
 	misLabel = (labels2 != wLabels2);
 	out_error = sum(misLabel) / OUT_ERROR_N;
+	it = it - 1;
+end
+
+function plotData(points, labels, L, weight)
+	y = L(1) .* points(:, 1) .+ L(2);
+	[i_pos j] = find(labels == 1);
+	[i_neg j] = find(labels == -1);
+	
+	plot( points(i_pos, 1) , points(i_pos, 2) , 'bx' );
+	axis([-1 1 -1 1]);
+	xlabel ('x1');
+	ylabel ('x2');
+	title ('Perceptron plot');
+	hold on;
+	plot( points(i_neg, 1) , points(i_neg, 2) , '@11' );
+	plot( points(:, 1) , y , 'g' ) ;
+	
+	y2 = (-weight(2)/weight(3)) .* points(:, 1) .+ (-weight(1) / weight(3) );
+	plot( points(:, 1) , y2 , 'k' ) ;
+	legend ({'+1', '-1', 'target function', 'perceptron-learned function'}, 'location', 'northeastoutside');
+	hold off;
+end
+
+function [iterations, errors] = runIterations(N, run_num)
+	iterations = zeros(1, run_num);
+	errors = zeros(1, run_num);
+	for i = 1:run_num
+		[it, points, labels, L, weight, out_error] = runExperiment(N, 10000);
+		iterations(i) = it;
+		errors(i) = out_error;
+	end
 end
 
 RUNS = 1000;
-iterations = zeros(1, RUNS);
-errors = zeros(1, RUNS);
 
-for i = 1:RUNS
-	[it, L, weight, out_error] = runExperiment(N, 10000);
-	iterations(i) = it;
-	errors(i) = out_error;
-end
-
-mean(iterations)
-mean(errors)
-
-#{
-L = generateRandomLine();
-points = generatePoints(N);
-pointsEx = [ones(N, 1) points];
-labels = getLabels(points, L);
-
-y = L(1) .* points(:, 1) .+ L(2);
-
-[i_pos j] = find(labels == 1);
-[i_neg j] = find(labels == -1);
-
-clf;
-
-plot( points(i_pos, 1) , points(i_pos, 2) , 'x' )
-axis([-1 1 -1 1]);
-hold on;
-
-%plot( x_axis_1, y_axis_1 , "@12"  ) 
-plot( points(:, 1) , y , 'g' ) ;
-
-plot( points(i_neg, 1) , points(i_neg, 2) , '@11' )
+%[iterations, errors] = runIterations(N, RUNS);
+%mean_iter = mean(iterations)
+%mean_error = mean(errors)
 
 
-ITER = 100;
-weight = [0 0 0];
-misses_count = zeros(1, ITER);
-for i = 1:ITER
-	missL = computeMissLabel(pointsEx, labels, weight);
-	misses_count(i) = length(missL);
-	if(misses_count(i) == 0)
-		break;
-	endif
-	ind = ceil(rand(1) * length(missL) ) ;
-	p = pointsEx(missL(ind), :);
-	
-	[p, labels(missL(ind)), weight * p'];
-	weight = computeNewWeight(weight, p, labels(missL(ind)) );
-	
-endfor
+[it, points, labels, L, weight, out_error] = runExperiment(N, 10000);
+plotData(points, labels, L, weight);
 
-weight;
-L;
-misses_count;
-y2 = (-weight(2)/weight(3)) .* points(:, 1) .+ (-weight(1) / weight(3) );
-plot( points(:, 1) , y2 , 'k' ) ;
-hold off;
-#}
+
+
 
