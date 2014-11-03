@@ -8,7 +8,7 @@ function A = generateRandomLine()
 	points = (rand(2, 2) .- 0.5) .* 2;
 	p1 = points(1, :);
 	p2 = points(2, :);
-	if(abs(p1(1) - p2(1)) < 0.0001)
+	if(abs(p1(1) - p2(1)) < 0.00001)
 		p1(1) = p1(1) /2;
 	endif
 	a = ( p2(2) - p1(2) ) / ( p2(1) - p1(1) );
